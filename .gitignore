@@ -1,0 +1,7 @@
+tessdata/*
+in/*
+out/*
+FpsProjectExtractor/bin/*
+FpsProjectExtractor/tessdata/*
+FpsProjectExtractor/obj/*
+.vs
