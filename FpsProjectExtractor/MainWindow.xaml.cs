@@ -36,6 +36,8 @@ namespace FpsProjectExtractor
         private static readonly int w = 178;
         private static readonly int h = 29;
 
+        private DateTime? StartTime = null;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -190,8 +192,9 @@ namespace FpsProjectExtractor
             return Tess(imgData);
         }
 
-        private void DoSubset(int offset = 0, int? limit = null)
+        private void DoSubset(IProgress<ProgressUpdate> progress, int offset = 0, int? limit = null)
         {
+            progress.Report(new ProgressUpdate("Getting files", 0, 0));
             string[] files = InputFiles();
             int count = limit ?? (files.Length - offset);
             int end = offset + count;
@@ -200,26 +203,67 @@ namespace FpsProjectExtractor
             List<string> fileNames = new List<string>(count);
             List<string> ocrResults = new List<string>(count);
 
+            int progressCount = 0;
             for (int i = offset; i < end; i++)
             {
                 fileNames.Add(files[i]);
                 ocrResults.Add(Process(files[i]));
+                progressCount += 1;
+                progress.Report(new ProgressUpdate(files[i], progressCount, count));
             }
+
+            progress.Report(new ProgressUpdate("Writing to CSV", progressCount, count));
             WriteResults(fileNames, ocrResults);
+            progress.Report(new ProgressUpdate("Finished", progressCount, count));
         }
 
         public void DoIt(object sender, RoutedEventArgs eventAargs)
         {
             RunBtn.IsEnabled = false;
             Log("Execution start");
-            DoSubset();
+            StartTime = DateTime.UtcNow;
+            Progress<ProgressUpdate> progress = new Progress<ProgressUpdate>(UpdateProgress);
+            Task.Factory.StartNew(() => DoSubset(progress, 0, 10));
+            UpdateElapsedTime();
             RunBtn.IsEnabled = true;
             Log("Execution finished");
         }
 
+        private void UpdateElapsedTime()
+        {
+            if (StartTime!= null)
+            {
+                TimeSpan elapsed = DateTime.UtcNow.Subtract(StartTime.Value);
+                TimeLabel.Content = "Elapsed time: " + elapsed.ToString("c");
+            }            
+        }
+
+        private void UpdateProgress(ProgressUpdate update)
+        {
+            MainProgressBar.Maximum = update.Count;
+            MainProgressBar.Value = update.Current;
+            CurrentFileLabel.Content = update.File;
+            ProgressLabel.Content = $"{update.Current} / {update.Count}";
+            UpdateElapsedTime();
+        }
+
         private void Test(object sender, RoutedEventArgs e)
         {
-            DoSubset(31000,10);
+            
+        }
+    }
+
+    class ProgressUpdate
+    {
+        public int Count = 0;
+        public int Current = 0;
+        public string File = "";
+
+        public ProgressUpdate(string file, int current, int count)
+        {
+            Count = count;
+            Current = current;
+            File = file;
         }
     }
     
