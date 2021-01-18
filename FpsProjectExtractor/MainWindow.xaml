@@ -14,6 +14,7 @@
             <RowDefinition/>
             <RowDefinition Height="9*"/>
         </Grid.RowDefinitions>
+        <Label x:Name="FileCountLabel" Content="Not yet loaded." Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Top"/>
         <ProgressBar x:Name="MainProgressBar" Minimum="0" Maximum="100" Value="0" Grid.Row="1" VerticalAlignment="Bottom" Height="18"/>
         <Label x:Name="ProgressLabel" Content="0/0" Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,25,0,25"/>
         <Label x:Name="CurrentFileLabel" Content="Not started" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="0,0,0,25" Grid.Row="1"/>

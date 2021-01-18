@@ -37,11 +37,25 @@ namespace FpsProjectExtractor
         private static readonly int h = 29;
 
         private DateTime? StartTime = null;
+        private string[] InputFiles;
 
         public MainWindow()
         {
             InitializeComponent();
             log.Info($"Starting a new session.");
+            
+        }
+
+        protected override void OnInitialized(EventArgs e)
+        {
+            base.OnInitialized(e);
+            ReadInDir();
+        }
+
+        private void ReadInDir()
+        {
+            InputFiles = Directory.GetFiles(System.IO.Path.Join(InDir, "demo"), "out*");
+            this.FileCountLabel.Content = $"Frames: {InputFiles.Length}";
         }
 
         public void Log(string msg)
@@ -49,11 +63,11 @@ namespace FpsProjectExtractor
             log.Info(msg);
         }
 
-        private string[] InputFiles()
-        {
-            string[] files = Directory.GetFiles(System.IO.Path.Join(InDir, "demo"), "out*");
-            return files;
-        }
+        //private string[] InputFiles()
+        //{
+        //    string[] files = 
+        //    return files;
+        //}
 
         private Mat Crop(Mat inMat)
         {
@@ -195,7 +209,7 @@ namespace FpsProjectExtractor
         private void DoSubset(IProgress<ProgressUpdate> progress, int offset = 0, int? limit = null)
         {
             progress.Report(new ProgressUpdate("Getting files", 0, 0));
-            string[] files = InputFiles();
+            string[] files = InputFiles;
             int count = limit ?? (files.Length - offset);
             int end = offset + count;
 
