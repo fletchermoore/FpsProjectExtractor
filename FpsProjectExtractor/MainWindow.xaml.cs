@@ -265,6 +265,12 @@ namespace FpsProjectExtractor
         {
             
         }
+
+        private void Analyze(object sender, RoutedEventArgs e)
+        {
+            Analyzer analyzer = new Analyzer(OutDir);
+            AnalyzeStatusLabel.Content = analyzer.Analyze();
+        }
     }
 
     class ProgressUpdate
