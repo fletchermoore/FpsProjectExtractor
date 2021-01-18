@@ -52,8 +52,7 @@ namespace FpsProjectExtractor
                                 // skip detected
                                 Skip skip = new Skip(prevRecord.Path, record.Path, prevImageNumber.Value, imageNumber);
                                 skipPoints.Add(skip);
-                            }
-                            
+                            }                            
                         }
                     }
                     prevImageNumber = imageNumber;
