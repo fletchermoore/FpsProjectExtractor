@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.IO;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -31,10 +30,11 @@ namespace FpsProjectExtractor
         private static readonly log4net.ILog log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
         private static readonly string OutDir = @"C:\Users\fletcher\projects\FpsProjectExtractor\out";
         private static readonly string InDir = @"C:\Users\fletcher\projects\FpsProjectExtractor\in";
-        private static readonly int x = 151;
-        private static readonly int y = 61;
-        private static readonly int w = 178;
-        private static readonly int h = 29;
+        private static readonly string InFolder = @"current";
+        private static readonly int x = 1627;
+        private static readonly int y = 405;
+        private static readonly int w = 90;
+        private static readonly int h = 32;
 
         private DateTime? StartTime = null;
         private string[] InputFiles;
@@ -54,7 +54,7 @@ namespace FpsProjectExtractor
 
         private void ReadInDir()
         {
-            InputFiles = Directory.GetFiles(System.IO.Path.Join(InDir, "demo"), "out*");
+            InputFiles = Directory.GetFiles(System.IO.Path.Join(InDir, InFolder), "out*");
             this.FileCountLabel.Content = $"Frames: {InputFiles.Length}";
         }
 
@@ -161,44 +161,7 @@ namespace FpsProjectExtractor
             }
         }
 
-        private string CreateLine(string filename, string result)
-        {
-            return $"{filename},{result}";
-        }
 
-        private string Parse(string result)
-        {
-            // Define a regular expression for repeated words.
-            Regex rx = new Regex(@"\b\d+\b",
-              RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
-            // Find matches.
-            MatchCollection matches = rx.Matches(result);
-            if (matches.Count == 0)
-            {
-                return "ERROR";
-            }
-            else
-            {
-                string parsed = "";
-                foreach(Match match in matches)
-                {
-                    parsed += match.Value + ",";
-                }
-                return parsed;
-            }
-        }
-
-        private void WriteResults(List<string> fileNames, List<string> results)
-        {
-            List<string> lines = new List<string>(fileNames.Count);
-            for(int i = 0; i < results.Count; i++)
-            {
-                string parsed = Parse(results[i]);
-                lines.Add(CreateLine(fileNames[i], parsed));
-            }
-            System.IO.File.WriteAllLines(System.IO.Path.Join(OutDir, "out.csv"), lines);
-        }
 
         private string Process(string file)
         {
@@ -217,17 +180,25 @@ namespace FpsProjectExtractor
             List<string> fileNames = new List<string>(count);
             List<string> ocrResults = new List<string>(count);
 
+            List<Record> records = new List<Record>(count);
+
             int progressCount = 0;
             for (int i = offset; i < end; i++)
             {
-                fileNames.Add(files[i]);
-                ocrResults.Add(Process(files[i]));
+                Record record = new Record();
+                record.Path = files[i];
+                record.Text = Process(files[i]);
+                records.Add(record);
+                //fileNames.Add(files[i]);
+                //ocrResults.Add(Process(files[i]));
                 progressCount += 1;
                 progress.Report(new ProgressUpdate(files[i], progressCount, count));
             }
 
             progress.Report(new ProgressUpdate("Writing to CSV", progressCount, count));
-            WriteResults(fileNames, ocrResults);
+            DataWriter writer = new DataWriter();
+            writer.Write(records, System.IO.Path.Join(OutDir, "out.csv"));
+            //WriteResults(fileNames, ocrResults);
             progress.Report(new ProgressUpdate("Finished", progressCount, count));
         }
 
@@ -237,7 +208,26 @@ namespace FpsProjectExtractor
             Log("Execution start");
             StartTime = DateTime.UtcNow;
             Progress<ProgressUpdate> progress = new Progress<ProgressUpdate>(UpdateProgress);
-            Task.Factory.StartNew(() => DoSubset(progress, 0, 10));
+            int start = 0;
+            int? limit = null;
+            try
+            {
+                start = Int32.Parse(FromBox.Text);
+            }
+            catch(Exception e)
+            {
+                FromBox.Text = $"{start}";
+            }
+            try
+            {
+                limit = Int32.Parse(LimitBox.Text);
+            }
+            catch(Exception e)
+            {
+                LimitBox.Text = "";
+
+            }
+            Task.Factory.StartNew(() => DoSubset(progress, start, limit));
             UpdateElapsedTime();
             RunBtn.IsEnabled = true;
             Log("Execution finished");

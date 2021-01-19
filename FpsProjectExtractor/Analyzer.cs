@@ -29,40 +29,48 @@ namespace FpsProjectExtractor
 
         public string Analyze()
         {
-            using (var reader = new StreamReader(RawFilePath))
-            using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
+            try
             {
-                IEnumerable<Record> records = csv.GetRecords<Record>();
-                List<Skip> skipPoints = new List<Skip>();
-                int count = 0;
-                int? prevImageNumber = null;
-                Record? prevRecord = null;
-                foreach (Record record in records)
+                using (var reader = new StreamReader(RawFilePath))
+                using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
                 {
-                    count++;
-                    int imageNumber = record.Result1;
-                    if (prevImageNumber != null)
+                    IEnumerable<Record> records = csv.GetRecords<Record>();
+                    List<Skip> skipPoints = new List<Skip>();
+                    int count = 0;
+                    int? prevImageNumber = null;
+                    Record? prevRecord = null;
+                    foreach (Record record in records)
                     {
-                        if (prevImageNumber +1 != imageNumber && prevImageNumber -1 != imageNumber && prevImageNumber != imageNumber)
+                        count++;
+                        int imageNumber = record.Result1;
+                        if (prevImageNumber != null)
                         {
-                            bool isWrap = ((prevImageNumber == MaxImage && imageNumber == 1) || (prevImageNumber == 1 || imageNumber == MaxImage));
-                            if (WrapAround && !isWrap)
-                          
+                            if (prevImageNumber + 1 != imageNumber && prevImageNumber - 1 != imageNumber && prevImageNumber != imageNumber)
                             {
-                                // skip detected
-                                Skip skip = new Skip(prevRecord.Path, record.Path, prevImageNumber.Value, imageNumber);
-                                skipPoints.Add(skip);
-                            }                            
+                                bool isWrap = ((prevImageNumber == MaxImage && imageNumber == 1) || (prevImageNumber == 1 || imageNumber == MaxImage));
+                                if (WrapAround && !isWrap)
+
+                                {
+                                    // skip detected
+                                    Skip skip = new Skip(prevRecord.Path, record.Path, prevImageNumber.Value, imageNumber);
+                                    skipPoints.Add(skip);
+                                }
+                            }
                         }
+                        prevImageNumber = imageNumber;
+                        prevRecord = record;
+
                     }
-                    prevImageNumber = imageNumber;
-                    prevRecord = record;
-                    
+                    WriteSkips(skipPoints);
+                    return $"Record count: {count}; Skip count: {skipPoints.Count}";
                 }
-                WriteSkips(skipPoints);
-                return $"Record count: {count}; Skip count: {skipPoints.Count}";
             }
-            return $"Failed to load {RawFilePath}";
+            catch(System.IO.FileNotFoundException e)
+            {
+                return $"{RawFilePath} not found.";
+            }
+
+            //return $"Failed to load {RawFilePath}";
         }
 
         private void WriteSkips(List<Skip> skips)

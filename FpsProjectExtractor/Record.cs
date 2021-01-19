@@ -9,5 +9,7 @@ namespace FpsProjectExtractor
         public string Path { get; set; }
         public int Result1 { get; set; }
         public int Result2 { get; set; }
+
+        public string Text { get; set; }
     }
 }
