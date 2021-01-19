@@ -31,13 +31,20 @@ namespace FpsProjectExtractor
         private static readonly string OutDir = @"C:\Users\fletcher\projects\FpsProjectExtractor\out";
         private static readonly string InDir = @"C:\Users\fletcher\projects\FpsProjectExtractor\in";
         private static readonly string InFolder = @"current";
-        private static readonly int x = 1627;
-        private static readonly int y = 405;
-        private static readonly int w = 90;
-        private static readonly int h = 32;
+        private static readonly int x = 197;
+        private static readonly int y = 61;
+        private static readonly int w = 116;
+        private static readonly int h = 31;
 
         private DateTime? StartTime = null;
         private string[] InputFiles;
+
+        private Point TopLeft = new Point(0, 0);
+        private Point BottomRight = new Point(0, 0);
+        private int RoiX = 0;
+        private int RoiY = 0;
+        private int RoiW = 0;
+        private int RoiH = 0;
 
         public MainWindow()
         {
@@ -87,7 +94,7 @@ namespace FpsProjectExtractor
         private byte[] Preprocess(string fullPath)
         {
             Mat img = CvInvoke.Imread(fullPath, Emgu.CV.CvEnum.ImreadModes.Grayscale);
-            System.Drawing.Rectangle roi = new System.Drawing.Rectangle(x, y, w, h);
+            System.Drawing.Rectangle roi = new System.Drawing.Rectangle(RoiX, RoiY, RoiW, RoiH);
             Mat croppedImg = new Mat(img, roi);
             Mat outImg = new Mat();
             CvInvoke.BitwiseNot(croppedImg, outImg);
@@ -260,6 +267,50 @@ namespace FpsProjectExtractor
         {
             Analyzer analyzer = new Analyzer(OutDir);
             AnalyzeStatusLabel.Content = analyzer.Analyze();
+        }
+
+        private void WholeImage_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            Point p = e.GetPosition(WholeImage);
+            
+            double xOffsetPercent = p.X / WholeImage.ActualWidth;
+            double yOffsetPercent = p.Y / WholeImage.ActualHeight;
+            double xOffset = - xOffsetPercent * (ZoomImage.ActualWidth * 2.0);
+            double yOffset = - yOffsetPercent * (ZoomImage.ActualHeight * 2.0);
+            Canvas.SetLeft(ZoomImage, xOffset);
+            Canvas.SetTop(ZoomImage, yOffset);
+            ZoomImageCanvas.Width = Double.NaN;
+            ZoomImageCanvas.Height = Double.NaN;
+
+        }
+
+        private void ZoomImage_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            TopLeft = e.GetPosition(ZoomImage);
+        }
+
+        private void ZoomImage_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            BottomRight = e.GetPosition(ZoomImage);
+            BoundsLabel.Content = $"{(int)TopLeft.X},{(int)TopLeft.Y} -> {(int)BottomRight.X},{(int)BottomRight.Y}";
+            Canvas.SetLeft(ZoomImage, -TopLeft.X * 2);
+            Canvas.SetTop(ZoomImage, -TopLeft.Y * 2);
+            ZoomImageCanvas.Width = (BottomRight.X - TopLeft.X) * 2;
+            ZoomImageCanvas.Height = (BottomRight.Y - TopLeft.Y) * 2;
+            SaveBtn.IsEnabled = true;
+            SaveBtn.Visibility = Visibility.Visible;
+            SaveBtn.Content = "Save ROI";
+        }
+
+        private void SaveBtn_Click(object sender, RoutedEventArgs e)
+        {
+            // TODO: write the ROI to file
+            SaveBtn.IsEnabled = false;
+            SaveBtn.Content = "Saved";
+            RoiX = (int)TopLeft.X;
+            RoiY = (int)TopLeft.Y;
+            RoiW = (int)(BottomRight.X - TopLeft.X);
+            RoiH = (int)(BottomRight.Y - TopLeft.Y);
         }
     }
 

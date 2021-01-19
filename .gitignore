@@ -5,3 +5,4 @@ FpsProjectExtractor/bin/*
 FpsProjectExtractor/tessdata/*
 FpsProjectExtractor/obj/*
 .vs
+FpsProjectExtractor/*.jpg
