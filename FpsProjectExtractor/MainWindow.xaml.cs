@@ -17,6 +17,9 @@ using System.Windows.Shapes;
 using Tesseract;
 using Emgu.CV;
 using Emgu.CV.Util;
+using Microsoft.WindowsAPICodePack.Dialogs;
+using System.Text.RegularExpressions;
+
 
 
 namespace FpsProjectExtractor
@@ -28,13 +31,10 @@ namespace FpsProjectExtractor
     {
 
         private static readonly log4net.ILog log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
-        private static readonly string OutDir = @"C:\Users\fletcher\projects\FpsProjectExtractor\out";
-        private static readonly string InDir = @"C:\Users\fletcher\projects\FpsProjectExtractor\in";
-        private static readonly string InFolder = @"current";
-        private static readonly int x = 197;
-        private static readonly int y = 61;
-        private static readonly int w = 116;
-        private static readonly int h = 31;
+        private static readonly string OutDir = @"E:\fps-project\out";
+        private static readonly string InDir = @"E:\fps-project\in";
+        private string InFolder = @"extract";
+        private static readonly string DefaultImage = @"out_0000001.jpg";
 
         private DateTime? StartTime = null;
         private string[] InputFiles;
@@ -56,7 +56,40 @@ namespace FpsProjectExtractor
         protected override void OnInitialized(EventArgs e)
         {
             base.OnInitialized(e);
+        }
+
+        private void SelectNewFolder()
+        {
+            CommonOpenFileDialog dialog = new CommonOpenFileDialog();
+            dialog.InitialDirectory = InDir;
+            dialog.IsFolderPicker = true;
+            if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
+            {
+
+                InFolder = System.IO.Path.GetFileName(dialog.FileName);
+            }
+
             ReadInDir();
+            ResetROI();
+            SetDefaultImages();
+        }
+
+        private void SetDefaultImages()
+        {
+            string path = System.IO.Path.Join(InDir, InFolder, DefaultImage);
+            try
+            {
+                BitmapImage bi3 = new BitmapImage();
+                bi3.BeginInit();
+                bi3.UriSource = new Uri(path, UriKind.Absolute);
+                bi3.EndInit();
+                WholeImage.Source = bi3;
+                ZoomImage.Source = bi3;
+            } catch(Exception e)
+            {
+                MessageBox.Show($"Image path invalid: {path}");
+            }
+
         }
 
         private void ReadInDir()
@@ -173,7 +206,15 @@ namespace FpsProjectExtractor
         private string Process(string file)
         {
             byte[] imgData = Preprocess(file);
-            return Tess(imgData);
+            string rawTess = Tess(imgData);
+            return RemoveCRLF(rawTess);
+        }
+
+        private string RemoveCRLF(string multiline)
+        {
+            string pattern = @"\\n|\\r";
+            string replacement = "_";
+            return Regex.Replace(multiline.Trim(), pattern, replacement);
         }
 
         private void DoSubset(IProgress<ProgressUpdate> progress, int offset = 0, int? limit = null)
@@ -204,7 +245,7 @@ namespace FpsProjectExtractor
 
             progress.Report(new ProgressUpdate("Writing to CSV", progressCount, count));
             DataWriter writer = new DataWriter();
-            writer.Write(records, System.IO.Path.Join(OutDir, "out.csv"));
+            writer.Write(records, System.IO.Path.Join(OutDir, $"{InFolder}.csv"));
             //WriteResults(fileNames, ocrResults);
             progress.Report(new ProgressUpdate("Finished", progressCount, count));
         }
@@ -269,6 +310,14 @@ namespace FpsProjectExtractor
             AnalyzeStatusLabel.Content = analyzer.Analyze();
         }
 
+        private void ResetROI()
+        {
+            RoiX = 0;
+            RoiY = 0;
+            RoiW = 0;
+            RoiH = 0;
+        }
+
         private void WholeImage_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             Point p = e.GetPosition(WholeImage);
@@ -281,7 +330,6 @@ namespace FpsProjectExtractor
             Canvas.SetTop(ZoomImage, yOffset);
             ZoomImageCanvas.Width = Double.NaN;
             ZoomImageCanvas.Height = Double.NaN;
-
         }
 
         private void ZoomImage_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -297,6 +345,11 @@ namespace FpsProjectExtractor
             Canvas.SetTop(ZoomImage, -TopLeft.Y * 2);
             ZoomImageCanvas.Width = (BottomRight.X - TopLeft.X) * 2;
             ZoomImageCanvas.Height = (BottomRight.Y - TopLeft.Y) * 2;
+            ResetSaveBtn();            
+        }
+
+        private void ResetSaveBtn()
+        {
             SaveBtn.IsEnabled = true;
             SaveBtn.Visibility = Visibility.Visible;
             SaveBtn.Content = "Save ROI";
@@ -311,6 +364,11 @@ namespace FpsProjectExtractor
             RoiY = (int)TopLeft.Y;
             RoiW = (int)(BottomRight.X - TopLeft.X);
             RoiH = (int)(BottomRight.Y - TopLeft.Y);
+        }
+
+        private void OpenBtn_Click(object sender, RoutedEventArgs e)
+        {
+            SelectNewFolder();
         }
     }
 

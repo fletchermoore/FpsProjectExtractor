@@ -20,6 +20,7 @@ namespace FpsProjectExtractor
             foreach(Record record in records)
             {
                 (record.Result1, record.Result2) = Parse(record.Text);
+                
             }
 
             using (var writer = new StreamWriter(destPath))
