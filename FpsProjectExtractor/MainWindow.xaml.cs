@@ -19,8 +19,7 @@ using Emgu.CV;
 using Emgu.CV.Util;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using System.Text.RegularExpressions;
-
-
+using Microsoft.Win32;
 
 namespace FpsProjectExtractor
 {
@@ -306,8 +305,14 @@ namespace FpsProjectExtractor
 
         private void Analyze(object sender, RoutedEventArgs e)
         {
-            Analyzer analyzer = new Analyzer(OutDir);
-            AnalyzeStatusLabel.Content = analyzer.Analyze();
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.InitialDirectory = OutDir;
+            if (openFileDialog.ShowDialog() == true)
+            {                
+                Analyzer analyzer = new Analyzer(openFileDialog.FileName);                
+                AnalyzeStatusLabel.Content = analyzer.Analyze();
+            }
+            
         }
 
         private void ResetROI()

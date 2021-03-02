@@ -10,20 +10,19 @@ namespace FpsProjectExtractor
 {
     class Analyzer
     {
-        private static readonly string RawFilename = "raw.csv";
-        private static readonly string WriteFilename = "out_skips.csv";
+        private static readonly string WriteFilenameSuffix = "-unverified-skips.csv";
         private string RawFilePath;
         private string WriteFilePath;
         private string OutDir;
         private bool WrapAround = true;
-        private int MaxImage = 133;
+        private int MaxImage = 69;
 
 
-        public Analyzer(string outDir)
+        public Analyzer(string path)
         {
-            OutDir = outDir;
-            RawFilePath = Path.Join(outDir, RawFilename);
-            WriteFilePath = Path.Join(OutDir, WriteFilename);
+            OutDir = Path.GetDirectoryName(path);
+            RawFilePath = path;
+            WriteFilePath = Path.Join(OutDir, $"{Path.GetFileNameWithoutExtension(path)}{WriteFilenameSuffix}");
 
         }
 
